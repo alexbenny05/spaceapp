@@ -1,0 +1,104 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <title>Habitat Layout Creator</title>
+  <style>
+    body { margin: 0; font-family: Arial, sans-serif; display: flex; }
+    #sidebar { width: 250px; padding: 20px; border-right: 1px solid #ccc; }
+    #grid { flex: 1; display: grid; grid-template-columns: repeat(10, 40px); grid-template-rows: repeat(10, 40px); gap: 2px; padding: 20px; background: #f0f0f0; }
+    .cell { width: 40px; height: 40px; border: 1px solid #aaa; display: flex; align-items: center; justify-content: center; cursor: pointer; }
+    .cell.selected { background: #7cc3ff; }
+    button { margin-top: 10px; padding: 6px 12px; }
+  </style>
+</head>
+<body>
+  <div id="sidebar">
+    <h2>Habitat Layout Creator</h2>
+    <label for="moduleSelect">Select Module:</label>
+    <select id="moduleSelect">
+      <option value="Sleep">Sleeping Quarters</option>
+      <option value="Lab">Laboratory</option>
+      <option value="Greenhouse">Greenhouse</option>
+      <option value="Storage">Storage</option>
+      <option value="Corridor">Corridor</option>
+    </select>
+    <button id="exportBtn">Export JSON</button>
+    <h3>Placed Modules:</h3>
+    <ul id="moduleList"></ul>
+  </div>
+
+  <div id="grid"></div>
+
+  <script>
+    const grid = document.getElementById('grid');
+    const moduleSelect = document.getElementById('moduleSelect');
+    const moduleList = document.getElementById('moduleList');
+    const exportBtn = document.getElementById('exportBtn');
+
+    const gridSize = 10;
+    const cells = [];
+    const placedModules = [];
+
+    // Create grid
+    for(let y=0; y<gridSize; y++){
+      for(let x=0; x<gridSize; x++){
+        const cell = document.createElement('div');
+        cell.classList.add('cell');
+        cell.dataset.x = x;
+        cell.dataset.y = y;
+        cell.addEventListener('click', () => placeModule(x, y));
+        grid.appendChild(cell);
+        cells.push(cell);
+      }
+    }
+
+    function placeModule(x, y){
+      // Check if already occupied
+      const exists = placedModules.find(m => m.x === x && m.y === y);
+      if(exists){
+        // Remove module
+        const index = placedModules.indexOf(exists);
+        placedModules.splice(index,1);
+        updateGrid();
+        updateModuleList();
+        return;
+      }
+      const moduleType = moduleSelect.value;
+      placedModules.push({ x, y, type: moduleType });
+      updateGrid();
+      updateModuleList();
+    }
+
+    function updateGrid(){
+      cells.forEach(cell => {
+        const x = parseInt(cell.dataset.x);
+        const y = parseInt(cell.dataset.y);
+        const occupied = placedModules.find(m => m.x===x && m.y===y);
+        cell.classList.toggle('selected', !!occupied);
+        cell.textContent = occupied ? occupied.type[0] : '';
+      });
+    }
+
+    function updateModuleList(){
+      moduleList.innerHTML = '';
+      placedModules.forEach(m => {
+        const li = document.createElement('li');
+        li.textContent = `${m.type} at (${m.x}, ${m.y})`;
+        moduleList.appendChild(li);
+      });
+    }
+
+    exportBtn.addEventListener('click', () => {
+      const data = { modules: placedModules };
+      const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+      const url = URL.createObjectURL(blob);
+      const a = document.createElement('a');
+      a.href = url;
+      a.download = 'habitat_layout.json';
+      a.click();
+      URL.revokeObjectURL(url);
+    });
+  </script>
+</body>
+</html>
